@@ -304,6 +304,25 @@ print(f"""
 ------------------------------------------------------------------
 """)
 
+# -- Simpan hasil prediksi terbaik untuk mapping -----------------------------
+subsection("Simpan Prediksi Terbaik untuk Mapping")
+
+import os
+outputs_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "outputs")
+os.makedirs(outputs_dir, exist_ok=True)
+
+pred_df = pd.DataFrame({
+    "kecamatan": df["kecamatan"].values,
+    "aktual_pct": y_raw,
+    "prediksi_pct": best["y_pred"],
+})
+pred_df["ape_pct"] = np.abs(pred_df["prediksi_pct"] - pred_df["aktual_pct"]) / pred_df["aktual_pct"].clip(lower=1e-9) * 100
+
+csv_path = os.path.join(outputs_dir, "gpr_best_predictions.csv")
+pred_df.to_csv(csv_path, index=False)
+print(f"  -> Prediksi terbaik disimpan: {csv_path}")
+print(f"  -> Kolom: kecamatan, aktual_pct, prediksi_pct, ape_pct")
+
 # ==============================================================================
 # STEP 6 - SHAP ANALYSIS (Best Kernel)
 # ==============================================================================
