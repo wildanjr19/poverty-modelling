@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sleman-poverty"
+version = "0.1.0"
+description = "Small-area poverty estimation for Kabupaten Sleman, DIY — GPR + remote sensing"
+requires-python = ">=3.10"
+license = "MIT"
+dependencies = [
+    "numpy>=1.24",
+    "pandas>=2.0",
+    "geopandas>=0.14",
+    "scikit-learn>=1.4",
+    "xgboost>=2.0",
+    "matplotlib>=3.8",
+    "shap>=0.44",
+    "libpysal>=4.9",
+    "esda>=2.5",
+    "earthengine-api>=1.4",
+    "requests>=2.31",
+    "shapely>=2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "black>=24.0",
+    "ruff>=0.3",
+]
+
+[tool.setuptools]
+package-dir = {"src" = "src"}
+packages = [
+    "src",
+    "src.modelling",
+    "src.data_acquisition",
+    "src.preprocessing",
+    "src.spatial",
+    "src.visualization",
+]
