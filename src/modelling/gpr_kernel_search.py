@@ -28,19 +28,12 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 import shap
 import matplotlib.pyplot as plt
 
-# -- Helpers ------------------------------------------------------------------
-def section(title):
-    print("\n" + "=" * 65)
-    print(f"  {title}")
-    print("=" * 65)
-
-def subsection(title):
-    print(f"\n-- {title} " + "-" * max(0, 55 - len(title)))
-
-def mape(y_true, y_pred):
-    y_true, y_pred = np.array(y_true), np.array(y_pred)
-    mask = y_true != 0
-    return np.mean(np.abs((y_true[mask] - y_pred[mask]) / y_true[mask])) * 100
+from src.modelling.helpers import section, subsection, mape
+from src.config import (
+    MODEL_DATA_PATH, TARGET_COL, KECAMATAN_COL,
+    GPR_PREDICTIONS_PATH, VIZ_SHAP_BEESWARM_PATH, VIZ_SHAP_BAR_PATH,
+    OUTPUT_DIR, PRED_COL_AKTUAL, PRED_COL_PREDIKSI, PRED_COL_APE,
+)
 
 
 # ==============================================================================
@@ -48,12 +41,12 @@ def mape(y_true, y_pred):
 # ==============================================================================
 section("STEP 1 - LOAD & PREP DATA")
 
-df = pd.read_csv("data/data_final.csv")
+df = pd.read_csv(MODEL_DATA_PATH)
 
 # Fix locale-style decimal comma in target column
-if df["persentase_penduduk_miskin"].dtype == object:
-    df["persentase_penduduk_miskin"] = (
-        df["persentase_penduduk_miskin"]
+if df[TARGET_COL].dtype == object:
+    df[TARGET_COL] = (
+        df[TARGET_COL]
         .astype(str)
         .str.replace(",", ".", regex=False)
         .astype(float)
@@ -66,10 +59,10 @@ print(f"\n  Baris: {len(df)}  |  Kolom: {df.shape[1]}")
 # X_raw = df[selected_features].values
 
 # Gunakan semua fitur (kecuali target dan kolom non-fitur)
-non_feature_cols = ["kecamatan", "persentase_penduduk_miskin"]
+non_feature_cols = [KECAMATAN_COL, TARGET_COL]
 feature_cols = [c for c in df.columns if c not in non_feature_cols]
 X_raw = df[feature_cols].values
-y_raw = df["persentase_penduduk_miskin"].values
+y_raw = df[TARGET_COL].values
 
 print(f"  Fitur : {feature_cols}  (total: {len(feature_cols)})")
 print(f"  Target: persentase_penduduk_miskin  ->  min={y_raw.min():.2f}%  max={y_raw.max():.2f}%  mean={y_raw.mean():.2f}%")
@@ -287,7 +280,7 @@ subsection(f"Detail Prediksi - {best['name']}")
 print(f"\n  {'Kecamatan':<16} {'Aktual (%)':>12} {'Prediksi (%)':>14} {'Error (pp)':>12} {'APE (%)':>10}")
 print(f"  {'-'*16} {'-'*12} {'-'*14} {'-'*12} {'-'*10}")
 
-for kec, act, pred in zip(df["kecamatan"], y_raw, best["y_pred"]):
+for kec, act, pred in zip(df[KECAMATAN_COL], y_raw, best["y_pred"]):
     err  = pred - act
     ape  = abs(err / act) * 100 if act != 0 else 0
     print(f"  {kec:<16} {act:>12.2f} {pred:>14.2f} {err:>+12.2f} {ape:>9.2f}%")
@@ -307,21 +300,18 @@ print(f"""
 # -- Simpan hasil prediksi terbaik untuk mapping -----------------------------
 subsection("Simpan Prediksi Terbaik untuk Mapping")
 
-import os
-outputs_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "outputs")
-os.makedirs(outputs_dir, exist_ok=True)
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 pred_df = pd.DataFrame({
-    "kecamatan": df["kecamatan"].values,
-    "aktual_pct": y_raw,
-    "prediksi_pct": best["y_pred"],
+    KECAMATAN_COL: df[KECAMATAN_COL].values,
+    PRED_COL_AKTUAL: y_raw,
+    PRED_COL_PREDIKSI: best["y_pred"],
 })
-pred_df["ape_pct"] = np.abs(pred_df["prediksi_pct"] - pred_df["aktual_pct"]) / pred_df["aktual_pct"].clip(lower=1e-9) * 100
+pred_df[PRED_COL_APE] = np.abs(pred_df[PRED_COL_PREDIKSI] - pred_df[PRED_COL_AKTUAL]) / pred_df[PRED_COL_AKTUAL].clip(lower=1e-9) * 100
 
-csv_path = os.path.join(outputs_dir, "gpr_best_predictions.csv")
-pred_df.to_csv(csv_path, index=False)
-print(f"  -> Prediksi terbaik disimpan: {csv_path}")
-print(f"  -> Kolom: kecamatan, aktual_pct, prediksi_pct, ape_pct")
+pred_df.to_csv(GPR_PREDICTIONS_PATH, index=False)
+print(f"  -> Prediksi terbaik disimpan: {GPR_PREDICTIONS_PATH}")
+print(f"  -> Kolom: {KECAMATAN_COL}, {PRED_COL_AKTUAL}, {PRED_COL_PREDIKSI}, {PRED_COL_APE}")
 
 # ==============================================================================
 # STEP 6 - SHAP ANALYSIS (Best Kernel)
@@ -367,18 +357,16 @@ explanation = shap.Explanation(
 # --- Beeswarm ---
 shap.plots.beeswarm(explanation, show=False)
 plt.tight_layout()
-out_beeswarm = "outputs/shap_beeswarm_best_gpr.png"
-plt.savefig(out_beeswarm, dpi=150, bbox_inches="tight")
+plt.savefig(VIZ_SHAP_BEESWARM_PATH, dpi=150, bbox_inches="tight")
 plt.close()
-print(f"  -> Beeswarm plot disimpan: {out_beeswarm}")
+print(f"  -> Beeswarm plot disimpan: {VIZ_SHAP_BEESWARM_PATH}")
 
 # --- Bar ---
 shap.plots.bar(explanation, show=False)
 plt.tight_layout()
-out_bar = "outputs/shap_bar_best_gpr.png"
-plt.savefig(out_bar, dpi=150, bbox_inches="tight")
+plt.savefig(VIZ_SHAP_BAR_PATH, dpi=150, bbox_inches="tight")
 plt.close()
-print(f"  -> Bar plot disimpan     : {out_bar}")
+print(f"  -> Bar plot disimpan     : {VIZ_SHAP_BAR_PATH}")
 
 print(f"\n  Base value (rata-rata prediksi): {explainer.expected_value:.4f}%")
 print("  Catatan: SHAP values merepresentasikan kontribusi tiap fitur")
