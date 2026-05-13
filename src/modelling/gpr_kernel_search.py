@@ -1,6 +1,6 @@
 """
 ==============================================================================
- GPR KERNEL GRID SEARCH - BARE Kemiskinan Sleman
+ GPR KERNEL GRID SEARCH - Estimasi Kemiskinan Sleman
 ==============================================================================
  Eksperimen sistematis kombinasi kernel GPR dengan LOOCV.
  Alur:
@@ -284,18 +284,6 @@ for kec, act, pred in zip(df[KECAMATAN_COL], y_raw, best["y_pred"]):
     err  = pred - act
     ape  = abs(err / act) * 100 if act != 0 else 0
     print(f"  {kec:<16} {act:>12.2f} {pred:>14.2f} {err:>+12.2f} {ape:>9.2f}%")
-
-print(f"""
-------------------------------------------------------------------
-  INTERPRETASI:
-  * APE (Absolute Percentage Error) per kecamatan ditampilkan
-    untuk identifikasi mana yang paling sulit diprediksi.
-  * Kecamatan APE > 30%: pertimbangkan cek anomali data atau
-    tambah fitur spesifik wilayah tersebut.
-  * Jika MAPE masih > 15%, batas bawahnya kemungkinan memang
-    dari keterbatasan n=17 - bukan masalah model.
-------------------------------------------------------------------
-""")
 
 # -- Simpan hasil prediksi terbaik untuk mapping -----------------------------
 subsection("Simpan Prediksi Terbaik untuk Mapping")

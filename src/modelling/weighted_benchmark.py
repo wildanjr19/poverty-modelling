@@ -1,6 +1,6 @@
 """
 ==============================================================================
- BARE MODELLING PIPELINE (WEIGHTED) - Estimasi Kemiskinan Kab. Sleman
+ POVERTY MODELLING PIPELINE (WEIGHTED) - Estimasi Kemiskinan Kab. Sleman
 ==============================================================================
  Alur kerja:
    1. Load & inspect data
@@ -379,17 +379,5 @@ for kec, act, pred, wf in zip(df[KECAMATAN_COL], y, overall_best_pred, w_final):
     err = pred - act
     ape = abs(err / act) * 100 if act != 0 else 0
     print(f"  {kec:<16} {act:>12.2f} {pred:>14.2f} {err:>+12.2f} {ape:>9.2f}% {wf:>10.6f}")
-
-print(f"""
-------------------------------------------------------------------
-  CATATAN:
-  * w_final rendah = observasi influential / high-leverage (Cook).
-    GPR memberi noise prior lebih besar pada titik tersebut.
-  * APE > 30%: perlu validasi lapangan atau tambah fitur lokal.
-  * Referensi bobot:
-      Cook (1977) Technometrics 19(1):15-18        → w_cook
-      Goldberg et al. (1998) NIPS                   → GPR alpha array
-------------------------------------------------------------------
-""")
 
 print("  [SELESAI] Script pipeline weighted + GPR Weighted selesai dijalankan.")

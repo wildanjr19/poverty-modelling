@@ -197,15 +197,4 @@ for i, (kec, act, pred) in enumerate(zip(df[KECAMATAN_COL], y, best_preds)):
     err = pred - act
     print(f"  {kec:<16} {act:>12.2f} {pred:>14.2f} {err:>+12.2f}")
 
-print(f"""
-------------------------------------------------------------------
-  CATATAN:
-  * Error dalam satuan percentage point (pp), bukan persen.
-  * MAPE tinggi di dataset kecil sering dipicu outlier satu titik.
-  * Cek kecamatan dengan |Error| terbesar untuk validasi lapangan.
-  * Jika MAPE masih > 20%, pertimbangkan tambah fitur atau
-    gunakan domain knowledge untuk weight kecamatan tertentu.
-------------------------------------------------------------------
-""")
-
 print("  [SELESAI] Script pipeline selesai dijalankan.")
