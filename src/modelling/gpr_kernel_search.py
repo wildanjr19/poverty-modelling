@@ -24,7 +24,7 @@ from sklearn.gaussian_process.kernels import (
     RationalQuadratic, ConstantKernel as C
 )
 from sklearn.model_selection import LeaveOneOut
-from sklearn.metrics import mean_squared_error, mean_absolute_error
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 import shap
 import matplotlib.pyplot as plt
 
@@ -59,7 +59,8 @@ print(f"\n  Baris: {len(df)}  |  Kolom: {df.shape[1]}")
 # X_raw = df[selected_features].values
 
 # Gunakan semua fitur (kecuali target dan kolom non-fitur)
-non_feature_cols = [KECAMATAN_COL, TARGET_COL]
+# Exclude population_mean karena proxy langsung dari target
+non_feature_cols = [KECAMATAN_COL, TARGET_COL, "population_mean"]
 feature_cols = [c for c in df.columns if c not in non_feature_cols]
 X_raw = df[feature_cols].values
 y_raw = df[TARGET_COL].values
@@ -239,16 +240,18 @@ for idx, (name, kernel, alpha_val) in enumerate(kernel_grid, 1):
     rmse_val = np.sqrt(mean_squared_error(y_true_all, y_pred_all))
     mae_val  = mean_absolute_error(y_true_all, y_pred_all)
     mape_val = mape(y_true_all, y_pred_all)
+    r2_val   = r2_score(y_true_all, y_pred_all)
 
     results.append({
         "name"  : name,
         "RMSE"  : rmse_val,
         "MAE"   : mae_val,
         "MAPE"  : mape_val,
+        "R2"    : r2_val,
         "y_pred": y_pred_all,
     })
 
-    print(f"       RMSE={rmse_val:.4f}  MAE={mae_val:.4f}  MAPE={mape_val:.2f}%")
+    print(f"       RMSE={rmse_val:.4f}  MAE={mae_val:.4f}  MAPE={mape_val:.2f}%  R2={r2_val:.4f}")
 
 
 # ==============================================================================
@@ -258,11 +261,11 @@ section("STEP 5 - RANKING HASIL - DIURUTKAN MAPE")
 
 results_sorted = sorted(results, key=lambda x: x["MAPE"])
 
-print(f"\n  {'#':<4} {'Kernel':<45} {'RMSE':>7} {'MAE':>7} {'MAPE':>9}")
-print(f"  {'-'*4} {'-'*45} {'-'*7} {'-'*7} {'-'*9}")
+print(f"\n  {'#':<4} {'Kernel':<45} {'RMSE':>7} {'MAE':>7} {'MAPE':>9} {'R2':>8}")
+print(f"  {'-'*4} {'-'*45} {'-'*7} {'-'*7} {'-'*9} {'-'*8}")
 for i, r in enumerate(results_sorted, 1):
     marker = "  <- TERBAIK" if i == 1 else ("  <- top-3" if i <= 3 else "")
-    print(f"  {i:<4} {r['name']:<45} {r['RMSE']:>7.4f} {r['MAE']:>7.4f} {r['MAPE']:>8.2f}%{marker}")
+    print(f"  {i:<4} {r['name']:<45} {r['RMSE']:>7.4f} {r['MAE']:>7.4f} {r['MAPE']:>8.2f}% {r['R2']:>8.4f}{marker}")
 
 best = results_sorted[0]
 print(f"""
@@ -271,6 +274,7 @@ print(f"""
   |  RMSE           : {best['RMSE']:.4f}                                  |
   |  MAE            : {best['MAE']:.4f}                                  |
   |  MAPE (LOOCV)   : {best['MAPE']:.2f}%                                 |
+  |  R2  (LOOCV)    : {best['R2']:.4f}                                  |
   +---------------------------------------------------------+
 """)
 
